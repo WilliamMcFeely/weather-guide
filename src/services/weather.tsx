@@ -17,3 +17,18 @@ export async function getWeatherForecast(lat: number, lon: number) {
     if (!res.ok) throw new Error('Failed to fetch weather data');
     return res.json();
 }
+
+export async function getCoordinatesFromCity(city: string) {
+    const res = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1`
+    );
+    if (!res.ok) throw new Error('Failed to fetch location');
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) throw new Error('City not found');
+    return {
+        lat: data.results[0].latitude,
+        lon: data.results[0].longitude,
+        name: data.results[0].name,
+        country: data.results[0].country,
+    };
+}

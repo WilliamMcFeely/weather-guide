@@ -1,103 +1,108 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+// app/dashboard/page.tsx
+import React, { useEffect, useState } from 'react';
+import { getWeatherForecast} from "@/services/weather";
+import { getCoordinatesFromCity} from "@/services/weather";
+
+function getConditionFromCode(code: number): string {
+  const map: Record<number, string> = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Fog',
+    48: 'Depositing rime fog',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Dense drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    71: 'Slight snow',
+    73: 'Moderate snow',
+    75: 'Heavy snow',
+    95: 'Thunderstorm',
+  };
+  return map[code] ?? 'Unknown';
+}
+
+export default function DashboardPage() {
+  const [city, setCity] = useState('Århus');
+  const [weather, setWeather] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchWeather = async (cityName: string) => {
+    try {
+      const { lat, lon } = await getCoordinatesFromCity(cityName);
+      const forecast = await getWeatherForecast(lat, lon);
+      setWeather(forecast);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+      setWeather(null);
+    }
+  };
+
+  useEffect(() => {
+    fetchWeather(city);
+  }, []);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+      <div className="p-6 max-w-4xl mx-auto text-white bg-black min-h-screen">
+        <h1 className="text-3xl font-bold mb-6 text-white">Weather Dashboard</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+        <div className="mb-6">
+          <div className="flex gap-2">
+            <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Enter city name"
+                className="flex-1 px-4 py-2 rounded bg-gray-900 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <button
+                onClick={() => fetchWeather(city)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Search
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+
+        {error && <p className="text-red-400 mb-6">{error}</p>}
+
+        {weather && (
+            <>
+              <section className="bg-gray-800 rounded shadow p-4 mb-6">
+                <h2 className="text-xl font-semibold mb-2 text-white">Current Weather</h2>
+                <p className="text-gray-200">Temperature: {weather.current_weather.temperature}°C</p>
+                <p className="text-gray-200">Condition: {getConditionFromCode(weather.current_weather.weathercode)}</p>
+                <p className="text-gray-200">Wind Speed: {weather.current_weather.windspeed} km/h</p>
+              </section>
+
+              <section className="bg-gray-800 rounded shadow p-4">
+                <h2 className="text-xl font-semibold mb-4 text-white">7-Day Forecast</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4">
+                  {weather.daily.time.map((date: string, idx: number) => (
+                      <div
+                          key={date}
+                          className="border border-gray-600 bg-gray-900 text-white p-2 rounded text-center"
+                      >
+                        <div className="font-medium">{new Date(date).toLocaleDateString(undefined, { weekday: 'short' })}</div>
+                        <div className="text-gray-300">
+                          {weather.daily.temperature_2m_min[idx]}°C / {weather.daily.temperature_2m_max[idx]}°C
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {getConditionFromCode(weather.daily.weathercode[idx])}
+                        </div>
+                      </div>
+                  ))}
+                </div>
+              </section>
+            </>
+        )}
+      </div>
   );
 }
