@@ -1,9 +1,10 @@
 'use client';
 
 // app/dashboard/page.tsx
-import React, { useEffect, useState } from 'react';
-import { getWeatherForecast} from "@/services/weather";
-import { getCoordinatesFromCity} from "@/services/weather";
+import React, {useEffect, useState} from 'react';
+import {getCoordinatesFromCity, getWeatherForecast, getWeatherSvgIcon} from "@/services/weather";
+import {getChatGPTAdvice} from "@/services/chat-gpt-service";
+import {Bot, MessageCircleMore} from 'lucide-react';
 
 function getConditionFromCode(code: number): string {
   const map: Record<number, string> = {
@@ -28,9 +29,13 @@ function getConditionFromCode(code: number): string {
 }
 
 export default function DashboardPage() {
-  const [city, setCity] = useState('Århus');
+  const [city, setCity] = useState('Aarhus');
   const [weather, setWeather] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [botReply, setBotReply] = useState<string | null>(null);
+  const [botLoading, setBotLoading] = useState(false);
+
+  const hasApiKey = !!process.env.NEXT_PUBLIC_CHAT_GPT_API_KEY;
 
   const fetchWeather = async (cityName: string) => {
     try {
@@ -38,15 +43,30 @@ export default function DashboardPage() {
       const forecast = await getWeatherForecast(lat, lon);
       setWeather(forecast);
       setError(null);
+      setBotReply(null);
     } catch (e: any) {
       setError(e.message);
       setWeather(null);
+      setBotReply(null);
     }
   };
 
   useEffect(() => {
     fetchWeather(city);
   }, []);
+
+  const handleAskBot = async () => {
+    if (!weather || botLoading || botReply) return;
+    try {
+      setBotLoading(true);
+      const reply = await getChatGPTAdvice(weather);
+      setBotReply(reply);
+    } catch (err) {
+      setBotReply('Sorry, I’m a bit overwhelmed right now.');
+    } finally {
+      setBotLoading(false);
+    }
+  };
 
   return (
       <div className="p-6 max-w-4xl mx-auto text-white bg-black min-h-screen">
@@ -70,16 +90,45 @@ export default function DashboardPage() {
           </div>
         </div>
 
-
         {error && <p className="text-red-400 mb-6">{error}</p>}
 
         {weather && (
             <>
               <section className="bg-gray-800 rounded shadow p-4 mb-6">
-                <h2 className="text-xl font-semibold mb-2 text-white">Current Weather</h2>
-                <p className="text-gray-200">Temperature: {weather.current_weather.temperature}°C</p>
-                <p className="text-gray-200">Condition: {getConditionFromCode(weather.current_weather.weathercode)}</p>
-                <p className="text-gray-200">Wind Speed: {weather.current_weather.windspeed} km/h</p>
+                <div className="flex gap-4">
+                  <div className="flex justify-center">{getWeatherSvgIcon(weather.current_weather.weathercode, 'w-24 h-24')}</div>
+                  <div className="flex flex-col flex-1 gap-3">
+                    <div>
+                      <h2 className="text-xl font-semibold mb-2 text-white">Current Weather</h2>
+                      <p className="text-gray-200">Temperature: {weather.current_weather.temperature}°C</p>
+                      <p className="text-gray-200">Condition: {getConditionFromCode(weather.current_weather.weathercode)}</p>
+                      <p className="text-gray-200">Wind Speed: {weather.current_weather.windspeed} km/h</p>
+                    </div>
+
+                    {hasApiKey && (
+                        <button
+                            onClick={handleAskBot}
+                            disabled={botLoading}
+                            className="px-3 py-1 text-sm rounded bg-blue-500 hover:bg-blue-600 text-white self-start"
+                        >
+                          {botLoading ? 'Asking WeatherBot...' : 'Ask WeatherBot'}
+                        </button>
+                    )}
+                    <div className="flex">
+                      <div className="flex items-start gap-3 border border-gray-700 p-3 bg-gray-900 rounded text-sm text-gray-300 min-h-[48px]">
+                        <div className="flex gap-1 items-center min-w-[40px]">
+                          <Bot className="w-5 h-5" />
+                          <MessageCircleMore className="w-5 h-5" />
+                        </div>
+                        <span className="whitespace-pre-wrap">
+                    {botReply || 'Ask WeatherBot for clothing suggestions based on today’s weather.'}
+                  </span>
+                      </div>
+                    </div>
+
+
+                  </div>
+                </div>
               </section>
 
               <section className="bg-gray-800 rounded shadow p-4">
